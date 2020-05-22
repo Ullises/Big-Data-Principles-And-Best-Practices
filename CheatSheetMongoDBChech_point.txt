@@ -1,0 +1,112 @@
+//MongoDB Basic Commands//
+
+//How to define a variable
+var movie = {
+            "name": "Avatar",
+            "company": "20th Century Fox", //Each attribute is separatted by simple coma
+            }
+            
+How to see the content in a variable
+>movie
+
+//Inserting attributes in a collection. The collection is created when a first document is inserted//
+db.movies.insert({"name": "Avatar", "company": "20th Century Fox"})
+
+//Command .find() is used to get information in the documents of a collection.
+> db.potions.find()
+
+//Also we can add the field and its value to perform a query to see the info of the search:
+> db.movies.find({"name": "Avatar"})
+
+//It's possible to add numeric values like profit, ranking, date, lists, and embedded documents:
+db.movies.insert(
+       {"name": "Avatar", 
+       "company": "20th Century Fox", 
+       "ranked": 1, "profit": "$2,787,965,087", 
+       "releaseDate": new Date(2009, 11, 17), 
+       "main actors": ["Zoe Saldana", "Sam Worthington", "Laz Alonso"], "
+       reviews": {"Rotten Tomatoes": "87%", "IMDb": "7.8/10", "Metacritic": "87%"}
+       })
+
+//We can delete document with remove() if it matches with some parameter that we specify:
+> db.movies.remove({"name": "Titanic"}) //The parameter is name.
+
+//Command .update() is used to apply changes to some values of the fields in the document:
+> db.movies.update({"name": "Titanic"}, {"$set": {"profit": "$2,187,463,944"}}) //The profit value is updated using "$set" to specify the field that we are going to update.
+
+//Using "multi" parameter with update() we can modify all matching documents:
+> db.movies.update({"vendor": "WDS"}, {"$set": {"company": "Walt Disney Studios"}}, {"multi": true})
+
+//We create a log document to record the views or clicks on it by adding the "count" field:
+> db.logs_films.update({"movie": "Jurassic World"}, {"$inc": {"count": 1}}) //With "$inc" we increase the count of an existing log document and updates or creates the count field if exists or not.
+
+//Command "upsert" is used with parameter update() to create a new document usign the parameters of the query. It is used with the log document query. If upsert is true, it creates a new document; if not, then updates the existing log document.
+> db.logs_films.update({"potion": "Titanic"}, {"$inc": {"count": 1}}, {"upsert": true})
+
+//We can remove fields that we don't need using the parameter "$unset" along with update():
+> db.movies.update({}, {"$unset":{"ranked":""}}, {"multi":true})
+
+//Also we can rename fields:
+> db.movies.update({}, {"$rename": {"ranked": "position"}}, {"multi": true})
+
+//To update a value of an array, we use "$set", but we have to specify the position of the value in the array of a single document as follows:
+> db.movies.update({"name": "JUrassic World"}, {"$set": {"main actors.1": "Lauren Lapkus"}}) //The value of the array in position 1 will change to Laure Lapkus
+
+// To update the value of different positions in the array of more than 1 document, we use a palceholder instead of the number of the position in the array:
+> db.movies.update({"main actors": "Robert Downy"}, {"$set": {"main actors.$": "Lauren Lapkus"}}, {"multi": true}) //We have to specify the query that we want to make the change, in this case, the query is the Robert Downey Jr actor.
+
+//To change values of embedded documents or dictionaries instead of specify the number, we specify the name of the field:
+> db.movies.update({"name": "Jurassic World"}, {"$set": {"reviews.Rotten Tomatoes": "75%"}})
+
+//To remove the first or last value of an array we use "$pop" with update(), 1 removes the last element, and -1 the first one
+> db.movies.update({"name": "Jurassic World"}, {"$pop": {"main actors": 1}})
+
+// To add a value at the end of the array, we use "$push" and the value is added at the end:
+> db.potions.update({"name": "Jurassic World"}, {"$push": {"categories": "Ty Simpkins"}})
+
+// To add a unique value to an array, we use "$addToSet" and it add a value if it is not already in the array:
+> db.movies.update({"name": "Jurassic World"}, {"$addToSet": {"main actors": "Ty Simpkins"}})
+
+// To remove any value and its instances (if not unique) from the array, we use "$pull":
+> db.movies.update({"name": "Jurassic World"}, {"$pull": {"categories": "Chris Pratt"}})
+
+// To query with multiple criteria, we use find() in comma-separated query, In this case, it will only show potions made by Walt Disney Studios that have Rotten Tomatoes of 75%.
+> db.potions.find({"vendor": "Walt Disney Studios", "reviews.Rotten Tomatoes": "75%})
+
+//Conditions - Common comparisons
+> db.movies.find({"profit": {"$lt": 2000000}}) //price less than 2000000
+
+//Finding potions between prices
+> db.potions.find({"profit": {"$gt":1000000,"$lt":2000000}}) //price greater than 10 and less than 20
+
+//Queries of non-equality
+> db.movies.find({"company": {"$ne": "Paramount"}})
+
+//Range queries of an array
+> db.movies.find({"sizes": {"$elemMatch": {"gt": 8, "lt": 16}}}) // at least 1 value in an array must be greater than 8 and less than 16
+
+// To specify what values or fields we want to get back when performing find(), getting back only the vendor and name fields, as well as the id field, unless we set false in the id field.
+> db.mongo.find({"position": {"$gte": 80}}, {"company": true, "name": true}) 
+
+//This will not get back the id.
+> db.mongo.find({"position": {"$gte": 80}}, {"company": true, "name": true, "_id": false})
+
+//This will exclude the vendor and price fields from getting back. 
+> db.mongo.find({"position": {"$gte": 80}}, {"company": false, "profit": false})
+
+//To know how many documents we have, we can use count() along with find() to know it:
+> db.movies.find().count() 
+
+// To sort our documents, we use the cursor method sort(), and inside we specify the field wich we want to sort:
+> db.potions.find().sort({"profit": 1})
+
+
+
+
+
+
+
+	
+	
+
+
