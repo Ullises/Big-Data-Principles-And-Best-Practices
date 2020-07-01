@@ -1,0 +1,89 @@
+------------------------------------------------------------------------------------------------------
+                                            CHAPTER 2
+------------------------------------------------------------------------------------------------------
+1.Where do the roots of relational databases lie on?
+It does  in business data processing, which was performed on mainframe computers in the 1960s and ’70s. The use cases appear mundane from today’s perspective: 
+typically transaction processing.
+
+2.What is the function of ID in real world?
+When you use an ID, the information that is meaningful to humans (such as the word Philanthropy) is stored in only one place, and everything that refers to it 
+uses an ID (which only has meaning within the database).
+ 
+3.What happens when the database itlself does not support joins?
+It is necessary to  to emulate a join in application code by making multiple queries to the database. 
+
+4.How did the design of IMS database come up?
+used a fairly simple data model called the hierarchical model, which has some remarkable similarities to the JSON model used by document databases. It represented 
+all data as a tree of records nested within records.
+
+5.How a query CODASYL was performed?
+By moving a cursor through the database by iterating over lists of records and following access paths. If a record had multiple parents (i.e., multiple incoming 
+pointers from other records), the application code had to keep track of all the various relationships.
+
+6.What does the query optimizer do in a relational database?
+It  automatically decides which parts of the query to execute in which order, and which indexes to use. Those choices are effectively the “access path”.
+
+7.Which are the main arguments in favor of the document data-model?
+They're schema flexibility, better performance due to locality, and that for some applications it is closer to the data structures used by the application. 
+
+8.Why the declarative query language is attractive?
+Because it is typically more concise and easier to work with than an imperative API. But more importantly, it also hides implementation details of the database engine
+which makes it possible for the database system to introduce performance improvements without requiring any changes to queries.
+
+9.What is the logic of the MAP-REDUCE query? 
+The logic of the query is expressed with snippets of code, which are called repeatedly by the processing framework. It is based on the map (also known as collect) and 
+reduce (also known as fold or inject) functions that exist in many functional programming languages.
+
+10.How a graph is formed?
+A graph consists of two kinds of objects: vertices (also known as nodes or entities) and edges (also known as relationships or arcs). Many kinds of data can be modeled
+as a graph.
+
+------------------------------------------------------------------------------------------------------
+                                            CHAPTER 2
+------------------------------------------------------------------------------------------------------
+1.Which is the general idea between indexes?
+The general idea behind them is to keep some additional metadata on the side, which acts as a signpost and helps you to locate the data you want. 
+If you want to search the same data in several different ways, you may need several different indexes
+
+2.How do we avoid eventually running out of disk space when data storage consists only of appending to a file?
+ A good solution is to break the log into segments of a certain size by closing a segment file when it reaches a certain size, and making subsequent 
+writes to a new segment file. We can then perform compaction on these segments.
+
+3.What are the disadvantages of hash tables?
+It is difficult to make an on-disk hash map perform well. It requires a lot of random access I/O, it is expensive to grow when it becomes full 
+and hash collisions require fiddly logic, also range queries are not efficient. For example, you cannot easily scan over all keys between kitty00000 
+and kitty99999—you’d have to look up each key individually in the hash maps. 
+
+4.What are the advantages of SSTables over a log segments with hash indexes?
+a) Merging segments is simple and efficient, even if the files are bigger than the available memory. b) In order to find a particular key in the file, 
+you no longer need to keep an index of all the keys in memory c) Since read requests need to scan over several key-value pairs in the requested range anyway  
+it is possible to group those records into a block and compress it before writing it to disk.
+
+5.Where does the similarity between SSTables and B-Trees?
+They keep key-value pairs sorted by key, which allows efficient keyvalue lookups and range queries. That’s where the similarity ends: B-trees have a
+very different design philosophy.
+
+6.What is an example of clustered index?
+For example, in MySQL’s InnoDB storage engine, the primary key of a table is always a clustered index, and secondary indexes refer to the primary key 
+(rather than a heap file location). In SQL Server, you can specify one clustered index per table.
+
+7.How does a datawarehouse work?
+The data warehouse contains a read-only copy of the data in all the various OLTP systems in the company. Data is extracted from OLTP databases (using either 
+a periodic data dump or a continuous stream of updates), transformed into an analysis-friendly schema, cleaned up, and then loaded into the data warehouse. 
+
+8.What is the key difference between a datawarehouse and OLTP databases?
+On the surface, a data warehouse and a relational OLTP database look similar, because they both have a SQL query interface. However, the internals of the systems
+can look quite different, because they are optimized for very different query patterns.
+
+9.What does a fact-table contain?
+Each row of the fact table represents an event that occurred at a particular time (here, each row represents a customer’s purchase of a product). If we were 
+analyzing website traffic rather than retail sales, each row might represent apage view or a click by a user. Some of the columns in the fact table are attributes, 
+such as the price at which the product was sold and the cost of buying it, other columns in the fact table are foreign key references to other tables, called dimension tables
+
+10.How does column-oriented storage help?
+It basically tells don’t store all the values from one row together, but store all the values from each column together instead. If each column is stored in a separate file, 
+a query only needs to read and parse those columnsthat are used in that query, which can save a lot of work. 
+
+
+
+
