@@ -1,0 +1,44 @@
+1.How does a rolling upgrade work and what it allows?
+It deploys the new version to a few nodes at a time, checking whether the new version is running smoothly, and gradually working your way through all the nodes. 
+This allows new versions to be deployed without service downtime.
+
+2.How do you write data to a file or send it over a network considering formats of encodig?
+you have to encode it as some kind of self-contained sequence of bytes (for example, a JSON document). Since a pointer wouldn’t make sense to any other process, this
+sequence-of-bytes representation looks quite different from the data structures that are normally used in memory
+
+3.What is the problem with encoding libraries that relates the object type and how is it vulnerable?
+In order to restore data in the same object types, the decoding process needs to be able to instantiate arbitrary classes. This is frequently a source of security
+problems, an attacker can get your application to decode an arbitrary byte sequence, they can instantiate arbitrary classes, which in turn often allows them
+to do terrible things.
+
+4.Why has XML been criticized for contenders of standarized encodings?
+Because it's too too verbose and unnecessarily complicated besides there is a lot of ambiguity around the encoding of numbers. In XML you cannot distinguish between 
+a number and a string that happens to consist of digits.
+
+5.What happens with data that is used only a specific organization?
+There is less pressure to use a lowest-common-denominator encoding format. For example, you could choose a format that is more compact or faster to parse. For a small 
+dataset, the gains are negligible, but once you get into the terabytes,  the choice of data format can have a big impact.
+
+6.How does the Trift CompactProtocol encoding work?
+It packs the same information into only 34 bytes. It does this by packing the field type and tag number into a single byte, and by using variable-length integers. 
+Rather than using a full eight bytes for the number 1337, it is encoded in two bytes, with the top bit of each byte used to indicate whether there are still more 
+bytes to come. 
+
+7.What is the problem with backward compatibility?
+The only detail is that if you add a new field, you cannot make it required. If you were to add a field and make it required, that check would fail if new code read
+data written by old code, because the old code will not have written the new field that you added. 
+
+8.Why there's nothing to identify fields or their datatypes in Avro Binary Encoding format?
+Because the encoding simply consists of values concatenated together. A string is just a length prefix followed by UTF-8 bytes, but there’s nothing in the encoded 
+data that tells you that it is a string. It could just as well be an integer, or something else entirely. 
+ 
+9.What are the main properties of binary encodings based on schemas?
+They can be much more compact than the various “binary JSON” variants. The schema is a valuable form of documentation, and because the schema is required for decoding, 
+you can be sure that it is up to date. Keeping a database of schemas allows you to check forward and backward compatibility of schema changes, before anything is deployed.
+For users of statically typed programming languages, the ability to generate code from the schema is useful
+
+10.What happens if you deploy a new version of application?
+You may entirely replace the old version with the new version within a few minutes. The same is not true of database contents: the five-year-old data will still be
+there, in the original encoding, unless you have explicitly rewritten it since then. 
+
+
