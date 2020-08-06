@@ -1,0 +1,158 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                           CHAPTER 5
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1.How does leader-based replication work?
+One of the replicas is designated the leader (also known as master or primary). When clients want to write to the database, they must send their requests to the leader,
+then whenever the leader writes new data to its local storage, it also sends the data change to all of its followers as part of a replication log or change stream.
+Each follower takes the log from the leader and updates its local copy of the data base, when a client wants to read from the database, it can query either the leader or
+any of the followers.
+
+2.What is the advantage/disadvantage of syncronous replication?
+The follower is guaranteed to have an up-to-date copy of the data that is consistent with the leader. If the leader sud denly fails, we can be sure that the data is 
+still available on the follower. The disadvantage is that if the synchronous follower doesn’t respond usually because crashing, network faulting or any other reason.
+
+3.What happens when a replication is configured to be completely asynchronous?
+In this case, if the leader fails and is not recoverable, any writes that have not yet been replicated to followers are lost. This means that a write is not guaranteed 
+to be durable, even if it has been confirmed to the client. However, a fully asynchronous configuration has the advantage that the leader can continue processing writes, 
+even if all of its followers have fallen behind.
+
+4.How does the process of setting up a follower go?
+Take a consistent snapshot of the leader’s database at some point in time—if possible, without taking a lock on the entire database. Copy the snapshot to the new follower node
+The follower connects to the leader and requests all the data changes that have happened since the snapshot was taken. When the follower has processed the backlog of data changes 
+since the snapshot, we say it has caught up continuing the changes of data from the leader as they happen.
+
+5.What do most of the systems use when there's no foolproof way of detecting what has gone wrong in failover process?
+They simply use a timeout: nodes frequently bounce messages back and forth between each other, and if a node doesn’t respond for some period of time—say, 30 seconds—it is
+assumed to be dead. (If the leader is deliberately taken down for planned mainte nance, this doesn’t apply).
+
+6.Why is the term "eventually" considered as deliberaty vague?
+Because in general, there is no limit to how far a replica can fall behind. In normal operation, the delay between a write happening on the leader and being reflected 
+on a follower—the replication lag—may be only a fraction of a second, and not noticeable in practice. However, if the system is operating near capacity or if there is 
+a problem in the network, the lag can easily increase to several seconds or even minutes.
+
+7.How can we implement read-after-write consistency in a system with leader-based replication?
+When reading something that the user may have modified, read it from the leader; otherwise, read it from a follower. If most things in the application are potentially 
+editable by the user, that approach won’t be effective, as most things would have to be read from the leader (negating the benefit of read scaling). The client can 
+remember the timestamp of its most recent write—then the system can ensure that the replica serving any reads for that user reflects updates at least until that timestamp.  
+If your replicas are distributed across multiple datacenters (for geographical proximity to users or for availability), there is additional complexity. 
+
+8.Which is one way to reach monotonic reads?
+One way of achieving monotonic reads is to make sure that each user always makes their reads from the same replica (different users can read from different replicas).
+For example, the replica can be chosen based on a hash of the user ID, rather than randomly. However, if that replica fails, the user’s queries will need to be rerouted to
+another replica. 
+
+9.Why many systems have abandoned Single-node transactions?
+Because many were claiming that transactions are too expensive in terms of performance and availability, and asserting that eventual consistency is inevitable in a 
+scalable system. There is some truth in that statement, but it is overly simplistic, and we will develop a more nuanced view
+
+10.In which case or example multi-leader replication is appropriate?
+For example, consider the calendar apps on your mobile phone, your laptop, and other devices. You need to be able to see your meetings (make read requests) and
+enter new meetings (make write requests) at any time, regardless of whether your device currently has an internet connection. If you make any changes while you are
+offline, they need to be synced with a server and your other devices when the device is next online.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                           CHAPTER 6
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1.Why is partitioning always combined with replication?
+So it can copy of each partition are stored on multiple nodes. This means that, even though each record belongs to exactly one partition, it may still be stored on 
+several different nodes for fault tolerance.
+
+2.How would we avoid hot spots and is there any disadvantage?
+The simplest approach for avoiding hot spots would be to assign records to nodes randomly. That would distribute the data quite evenly across the nodes, but it has a
+big disadvantage: when you’re trying to read a particular item, you have no way of knowing which node it is on, so you have to query all nodes in parallel.
+
+3.How do range of key behave in partitions?
+They are not necessarily evenly spaced, because your data may not be evenly distributed. The partition boundaries might be chosen manually by an administrator, 
+or the database can choose them automatically, within each partition, we can keep keys in sorted order. This has the advantage that range scans are easy, and you 
+can treat the key as a concatenated index in order to fetch several related records in one query.
+
+4.Why does the hash partition function need not to be cryptographically strong?
+This is for partitioning purposes for example, Cassandra and MongoDB use MD5, and Voldemort uses the Fowler– Noll–Vo function. Many programming languages have simple 
+hash functions built in (as they are used for hash tables), but they may not be suitable for partitioning.
+
+5.How would we reduce skewness in a real-life application?
+For example, if one key is known to be very hot, a simple technique is to add a random number to the beginning or end of the key. Just a two-digit decimal random number
+would split the writes to the key evenly across 100 different keys, allowing those keys to be distributed to different partitions. However, having split the writes 
+across different keys, any reads now have to do additional work, as they have to read the data from all 100 keys and combine it. 
+
+6.What happens if secondary indexes are involved in partition schemas?
+A secondary index usually doesn’t identify a record uniquely but rather is a way of searching for occurrences of a particular value: find all actions by user 123, find
+all articles containing the word hogwash, find all cars whose color is red, and so on.
+
+7.What is the approach of partitioning secondary indexes by document?
+Each partition is completely separate: each partition maintains its own secondary indexes, covering only the documents in that partition. It doesn’t care what data is 
+stored in other partitions. Whenever you need to write to the database—to add, remove, or update a document—you only need to deal with the partition that contains the 
+document ID that you are writing. 
+
+8.Which is the advantage of a global index over a document-partitioned index?
+The advantage of a global (term-partitioned) index over a document-partitioned index is that it can make reads more efficient: rather than doing scatter/gather over
+all partitions, a client only needs to make a request to the partition containing the term that it wants. However, the downside of a global index is that writes are 
+slower and more complicated.
+
+9.How is rebalancing described and what are its minimum requirements?
+It is described by the changes on a database over time 
+•The query throughput increases, so you want to add more CPUs to handle the load.
+• The dataset size increases, so you want to add more disks and RAM to store it.
+• A machine fails, and other machines need to take over the failed machine’s responsibilities.
+
+10.Mention one approach that does not make rebalance excessively expensive
+There is a fairly simple solution: create many more partitions than there are nodes, and assign several partitions to each node. For example, a database running on a 
+cluster of 10 nodes may be split into 1,000 partitions from the outset so that approximately 100 partitions are assigned to each node. Now, if a node is added to the 
+cluster, the new node can steal a few partitions from every existing node until partitions are fairly distributed once again. 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                           CHAPTER 7
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1.Why did nonrelational (NoSQL) databases start to gain popularity in the late 2000's?
+Because they aimed to improve upon the relational status quo by offering a choice of new data models, and by including replication and  partitioning by default. 
+Transactions were the main casualty of this movement: many of this new generation of databases abandoned transactions entirely  or redefined the word to describe a 
+much weaker set of guarantees than had previously been understood.
+
+2.What would happen without atomicity in a system?
+Without atomicity, if an error occurs partway through making multiple changes, it’s difficult to know which changes have taken effect and which haven’t. The application
+could try again, but that risks making the same change twice, leading to duplicate or incorrect data. 
+
+3.Why have many distributed datastores abandoned multi-object transactions?
+Because they are difficult to implement across partitions, and they can get in the way in some scenarios where very high availability or performance is required. 
+However, there is nothing that fundamentally prevents transactions in a distributed database.
+
+4.What is the problem with concurrency bugs caused by weak transaction isolation?
+They're not just a theoretical problem. They have caused substantial loss of money, led to investigation by financial auditors, and caused customer data to be corrupted. 
+A popular comment on revelations of such problems is “Use an ACID database if you’re handling financial data!”.
+
+5.Which are the main reasons about why it's useful to prevent dirty reads?
+If a transaction needs to update several objects, a dirty read means that another transaction may see some of the updates but not others. If a transaction aborts, any 
+writes it has made need to be rolled back.
+
+6.How is Snapshot isolation implemented?
+The idea is that each transaction reads from a consistent snapshot of the database—that is, the transaction sees all the data that was committed in the database at the 
+start of the transaction. Even if the data is subsequently changed by another transaction, each transaction sees only the old data from that particular point in time.
+
+7.How can the lost update problem happen?
+It can occur if an application reads some value from the data base, modifies it, and writes back the modified value (a read-modify-write cycle). If two transactions 
+do this concurrently, one of the modifications can be lost, because the second write does not include the first modification. (We sometimes say that the later write 
+clobbers the earlier write.) 
+
+8.What pattern do Phantoms follow for causing write skew?
+1. A SELECT query checks whether some requirement is satisfied by searching for rows that match some search condition
+2.Depending on the result of the first query, the application code decides how to continue (perhaps to go ahead with the operation, or perhaps to report an error
+to the user and abort).
+3.If the application decides to go ahead, it makes a write (INSERT, UPDATE, or DELETE) to the database and commits the transaction. The effect of this write changes the 
+precondition of the decision of step 2. In other words, if you were to repeat the SELECT query from step 1 after commiting the write, you would get a different result, 
+because the write changed the set of rows matching the search condition.
+
+9.Why Serializable isolation is usually regarded as the strongest isolation level?
+Because  it guarantees that even though transactions may execute in parallel, the end result is the same as if they had executed one at a time, serially, without any 
+concurrency. Thus, the database guarantees that if the transactions behave correctly when run individually, they continue to be correct when run concurrently—in other 
+words, the database prevents all possible race conditions.
+
+10.How does the approach of executing transactions serially work?
+It's implemented in VoltDB/H-Store, Redis, and Datomic [46, 47, 48]. A system designed for single-threaded execution can sometimes perform better than a system that 
+supports concurrency, because it can avoid the coordination overhead of locking. However, its throughput is limited to that of a single CPU core. In order to make the 
+most of that single thread, transactions need to be structured differently from their traditional form.
+
+
+
+
+
+
+
+
