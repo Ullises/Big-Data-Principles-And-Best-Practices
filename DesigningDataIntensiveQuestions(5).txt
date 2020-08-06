@@ -1,0 +1,48 @@
+1.How does leader-based replication work?
+One of the replicas is designated the leader (also known as master or primary). When clients want to write to the database, they must send their requests to the leader,
+then whenever the leader writes new data to its local storage, it also sends the data change to all of its followers as part of a replication log or change stream.
+Each follower takes the log from the leader and updates its local copy of the data base, when a client wants to read from the database, it can query either the leader or
+any of the followers.
+
+2.What is the advantage/disadvantage of syncronous replication?
+The follower is guaranteed to have an up-to-date copy of the data that is consistent with the leader. If the leader sud denly fails, we can be sure that the data is 
+still available on the follower. The disadvantage is that if the synchronous follower doesn’t respond usually because crashing, network faulting or any other reason.
+
+3.What happens when a replication is configured to be completely asynchronous?
+In this case, if the leader fails and is not recoverable, any writes that have not yet been replicated to followers are lost. This means that a write is not guaranteed 
+to be durable, even if it has been confirmed to the client. However, a fully asynchronous configuration has the advantage that the leader can continue processing writes, 
+even if all of its followers have fallen behind.
+
+4.How does the process of setting up a follower go?
+Take a consistent snapshot of the leader’s database at some point in time—if possible, without taking a lock on the entire database. Copy the snapshot to the new follower node
+The follower connects to the leader and requests all the data changes that have happened since the snapshot was taken. When the follower has processed the backlog of data changes 
+since the snapshot, we say it has caught up continuing the changes of data from the leader as they happen.
+
+5.What do most of the systems use when there's no foolproof way of detecting what has gone wrong in failover process?
+They simply use a timeout: nodes frequently bounce messages back and forth between each other, and if a node doesn’t respond for some period of time—say, 30 seconds—it is
+assumed to be dead. (If the leader is deliberately taken down for planned mainte nance, this doesn’t apply).
+
+6.Why is the term "eventually" considered as deliberaty vague?
+Because in general, there is no limit to how far a replica can fall behind. In normal operation, the delay between a write happening on the leader and being reflected 
+on a follower—the replication lag—may be only a fraction of a second, and not noticeable in practice. However, if the system is operating near capacity or if there is 
+a problem in the network, the lag can easily increase to several seconds or even minutes.
+
+7.How can we implement read-after-write consistency in a system with leader-based replication?
+When reading something that the user may have modified, read it from the leader; otherwise, read it from a follower. If most things in the application are potentially 
+editable by the user, that approach won’t be effective, as most things would have to be read from the leader (negating the benefit of read scaling). The client can 
+remember the timestamp of its most recent write—then the system can ensure that the replica serving any reads for that user reflects updates at least until that timestamp.  
+If your replicas are distributed across multiple datacenters (for geographical proximity to users or for availability), there is additional complexity. 
+
+8.Which is one way to reach monotonic reads?
+One way of achieving monotonic reads is to make sure that each user always makes their reads from the same replica (different users can read from different replicas).
+For example, the replica can be chosen based on a hash of the user ID, rather than randomly. However, if that replica fails, the user’s queries will need to be rerouted to
+another replica. 
+
+9.Why many systems have abandoned Single-node transactions?
+Because many were claiming that transactions are too expensive in terms of performance and availability, and asserting that eventual consistency is inevitable in a 
+scalable system. There is some truth in that statement, but it is overly simplistic, and we will develop a more nuanced view
+
+10.In which case or example multi-leader replication is appropriate?
+For example, consider the calendar apps on your mobile phone, your laptop, and other devices. You need to be able to see your meetings (make read requests) and
+enter new meetings (make write requests) at any time, regardless of whether your device currently has an internet connection. If you make any changes while you are
+offline, they need to be synced with a server and your other devices when the device is next online.

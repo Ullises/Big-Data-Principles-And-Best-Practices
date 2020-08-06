@@ -1,0 +1,49 @@
+1.Why is partitioning always combined with replication?
+So it can copy of each partition are stored on multiple nodes. This means that, even though each record belongs to exactly one partition, it may still be stored on 
+several different nodes for fault tolerance.
+
+2.How would we avoid hot spots and is there any disadvantage?
+The simplest approach for avoiding hot spots would be to assign records to nodes randomly. That would distribute the data quite evenly across the nodes, but it has a
+big disadvantage: when you’re trying to read a particular item, you have no way of knowing which node it is on, so you have to query all nodes in parallel.
+
+3.How do range of key behave in partitions?
+They are not necessarily evenly spaced, because your data may not be evenly distributed. The partition boundaries might be chosen manually by an administrator, 
+or the database can choose them automatically, within each partition, we can keep keys in sorted order. This has the advantage that range scans are easy, and you 
+can treat the key as a concatenated index in order to fetch several related records in one query.
+
+4.Why does the hash partition function need not to be cryptographically strong?
+This is for partitioning purposes for example, Cassandra and MongoDB use MD5, and Voldemort uses the Fowler– Noll–Vo function. Many programming languages have simple 
+hash functions built in (as they are used for hash tables), but they may not be suitable for partitioning.
+
+5.How would we reduce skewness in a real-life application?
+For example, if one key is known to be very hot, a simple technique is to add a random number to the beginning or end of the key. Just a two-digit decimal random number
+would split the writes to the key evenly across 100 different keys, allowing those keys to be distributed to different partitions. However, having split the writes 
+across different keys, any reads now have to do additional work, as they have to read the data from all 100 keys and combine it. 
+
+6.What happens if secondary indexes are involved in partition schemas?
+A secondary index usually doesn’t identify a record uniquely but rather is a way of searching for occurrences of a particular value: find all actions by user 123, find
+all articles containing the word hogwash, find all cars whose color is red, and so on.
+
+7.What is the approach of partitioning secondary indexes by document?
+Each partition is completely separate: each partition maintains its own secondary indexes, covering only the documents in that partition. It doesn’t care what data is 
+stored in other partitions. Whenever you need to write to the database—to add, remove, or update a document—you only need to deal with the partition that contains the 
+document ID that you are writing. 
+
+8.Which is the advantage of a global index over a document-partitioned index?
+The advantage of a global (term-partitioned) index over a document-partitioned index is that it can make reads more efficient: rather than doing scatter/gather over
+all partitions, a client only needs to make a request to the partition containing the term that it wants. However, the downside of a global index is that writes are 
+slower and more complicated.
+
+9.How is rebalancing described and what are its minimum requirements?
+It is described by the changes on a database over time 
+•The query throughput increases, so you want to add more CPUs to handle the load.
+• The dataset size increases, so you want to add more disks and RAM to store it.
+• A machine fails, and other machines need to take over the failed machine’s responsibilities.
+
+10.Mention one approach that does not make rebalance excessively expensive
+There is a fairly simple solution: create many more partitions than there are nodes, and assign several partitions to each node. For example, a database running on a 
+cluster of 10 nodes may be split into 1,000 partitions from the outset so that approximately 100 partitions are assigned to each node. Now, if a node is added to the 
+cluster, the new node can steal a few partitions from every existing node until partitions are fairly distributed once again. 
+
+
+

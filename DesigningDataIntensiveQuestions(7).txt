@@ -1,0 +1,50 @@
+1.Why did nonrelational (NoSQL) databases start to gain popularity in the late 2000's?
+Because they aimed to improve upon the relational status quo by offering a choice of new data models, and by including replication and  partitioning by default. 
+Transactions were the main casualty of this movement: many of this new generation of databases abandoned transactions entirely  or redefined the word to describe a 
+much weaker set of guarantees than had previously been understood.
+
+2.What would happen without atomicity in a system?
+Without atomicity, if an error occurs partway through making multiple changes, it’s difficult to know which changes have taken effect and which haven’t. The application
+could try again, but that risks making the same change twice, leading to duplicate or incorrect data. 
+
+3.Why have many distributed datastores abandoned multi-object transactions?
+Because they are difficult to implement across partitions, and they can get in the way in some scenarios where very high availability or performance is required. 
+However, there is nothing that fundamentally prevents transactions in a distributed database.
+
+4.What is the problem with concurrency bugs caused by weak transaction isolation?
+They're not just a theoretical problem. They have caused substantial loss of money, led to investigation by financial auditors, and caused customer data to be corrupted. 
+A popular comment on revelations of such problems is “Use an ACID database if you’re handling financial data!”.
+
+5.Which are the main reasons about why it's useful to prevent dirty reads?
+If a transaction needs to update several objects, a dirty read means that another transaction may see some of the updates but not others. If a transaction aborts, any 
+writes it has made need to be rolled back.
+
+6.How is Snapshot isolation implemented?
+The idea is that each transaction reads from a consistent snapshot of the database—that is, the transaction sees all the data that was committed in the database at the 
+start of the transaction. Even if the data is subsequently changed by another transaction, each transaction sees only the old data from that particular point in time.
+
+7.How can the lost update problem happen?
+It can occur if an application reads some value from the data base, modifies it, and writes back the modified value (a read-modify-write cycle). If two transactions 
+do this concurrently, one of the modifications can be lost, because the second write does not include the first modification. (We sometimes say that the later write 
+clobbers the earlier write.) 
+
+8.What pattern do Phantoms follow for causing write skew?
+1. A SELECT query checks whether some requirement is satisfied by searching for rows that match some search condition
+2.Depending on the result of the first query, the application code decides how to continue (perhaps to go ahead with the operation, or perhaps to report an error
+to the user and abort).
+3.If the application decides to go ahead, it makes a write (INSERT, UPDATE, or DELETE) to the database and commits the transaction. The effect of this write changes the 
+precondition of the decision of step 2. In other words, if you were to repeat the SELECT query from step 1 after commiting the write, you would get a different result, 
+because the write changed the set of rows matching the search condition.
+
+9.Why Serializable isolation is usually regarded as the strongest isolation level?
+Because  it guarantees that even though transactions may execute in parallel, the end result is the same as if they had executed one at a time, serially, without any 
+concurrency. Thus, the database guarantees that if the transactions behave correctly when run individually, they continue to be correct when run concurrently—in other 
+words, the database prevents all possible race conditions.
+
+10.How does the approach of executing transactions serially work?
+It's implemented in VoltDB/H-Store, Redis, and Datomic [46, 47, 48]. A system designed for single-threaded execution can sometimes perform better than a system that 
+supports concurrency, because it can avoid the coordination overhead of locking. However, its throughput is limited to that of a single CPU core. In order to make the 
+most of that single thread, transactions need to be structured differently from their traditional form.
+
+
+
